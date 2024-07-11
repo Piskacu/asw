@@ -84,7 +84,7 @@ def main():
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
     input_address = input(Fore.YELLOW + "Masukkan alamat tujuan: ").strip()
-    gas_price_wei = 100  # 0.0000001 UNIT0 dalam wei
+    gas_price_wei = 500  # 0.0000005 UNIT0 dalam wei
     gas_limit = 21000
 
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim per transaksi: ").replace(',', '.'))
@@ -103,6 +103,10 @@ def main():
         except web3.exceptions.TransactionNotFound:
             print(Fore.RED + 'Transaksi tidak ditemukan dalam pool. Mencoba dengan nonce yang berbeda...')
             nonce += 1  # Increment nonce
+            continue
+        except web3.exceptions.ReplaceTransactionUnderpriced:
+            print(Fore.RED + 'Transaksi pengganti terlalu murah. Meningkatkan gas price...')
+            gas_price_wei = int(gas_price_wei * 1.1)  # Increase gas price by 10%
             continue
         except Exception as e:
             print(Fore.RED + f'Transaksi gagal: {e}')
