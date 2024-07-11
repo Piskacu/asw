@@ -64,4 +64,4 @@ def get_nonce_with_retry(address, retries=5, delay=5):
             time.sleep(delay)
         except exceptions.BadFunctionCallOutput as e:
             print(Fore.RED + "Keluaran panggilan fungsi buruk:", e)
-            jika itu tidak  , '' Pak   serta  Jahalam  Madu  Soakukan 
+            untuk jika
