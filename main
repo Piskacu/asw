@@ -66,6 +66,35 @@ def get_nonce_with_retry(address, retries=5, delay=5):
     print(Fore.RED + "Gagal mendapatkan nonce setelah beberapa percobaan.")
     exit()
 
+# Fungsi untuk mengirim transaksi dengan mekanisme penggantian gas yang lebih tinggi jika diperlukan
+def send_transaction_with_replacement(sender_private_key, to_address, amount, gas_price, gas_limit):
+    sender_address = Account.from_key(sender_private_key).address
+
+    # Ambil nonce dengan penanganan kesalahan
+    nonce = get_nonce_with_retry(sender_address)
+
+    while True:
+        try:
+            # Kirim transaksi
+            tx_hash = send_tokens(sender_private_key, to_address, amount, nonce, gas_price, gas_limit)
+            print(Fore.GREEN + f'Transaksi berhasil dikirim ke {to_address} dengan hash: {tx_hash.hex()}')
+            return tx_hash
+        except ValueError as e:
+            print(Fore.RED + f'Error: {e}')
+            if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
+                nonce = get_nonce_with_retry(sender_address)
+            elif 'Replacement transaction underpriced' in str(e):
+                # Jika transaksi underpriced, naikkan gas price sebesar 10%
+                gas_price = int(gas_price * 1.1)
+                print(Fore.YELLOW + f'Menaikkan gas price menjadi {gas_price}')
+            else:
+                break
+        except Exception as e:
+            print(Fore.RED + f'Transaksi gagal: {e}')
+            break
+
+    return None
+
 # Main program
 def main():
     print(Fore.MAGENTA + "===============================")
@@ -91,27 +120,11 @@ def main():
     num_transactions = int(input(Fore.YELLOW + "Masukkan jumlah transaksi yang ingin dikirim: ").strip())
     
     total_transactions = 0
-    nonce = get_nonce_with_retry(sender_address)
 
     for _ in range(num_transactions):
-        while True:
-            try:
-                tx_hash = send_tokens(sender_private_key, input_address, amount, nonce, gas_price_wei, gas_limit)
-                print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash.hex()}')
-                total_transactions += 1
-                nonce += 1
-                break
-            except ValueError as e:
-                print(Fore.RED + f'Error: {e}')
-                if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
-                    nonce = get_nonce_with_retry(sender_address)
-                elif 'Replacement transaction underpriced' in str(e):
-                    gas_price_wei = int(gas_price_wei * 1.1)  # Increase the gas price by 10%
-                else:
-                    break
-            except Exception as e:
-                print(Fore.RED + f'Transaksi gagal: {e}')
-                break
+        tx_hash = send_transaction_with_replacement(sender_private_key, input_address, amount, gas_price_wei, gas_limit)
+        if tx_hash:
+            total_transactions += 1
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
