@@ -1,6 +1,5 @@
 from web3 import Web3
 from eth_account import Account
-import json
 from colorama import init, Fore, Style
 import time
 
@@ -55,45 +54,17 @@ def send_tokens(sender_private_key, to_address, amount, nonce, gas_price, gas_li
 def get_nonce_with_retry(address, retries=5, delay=5):
     for i in range(retries):
         try:
-            nonce = w3.eth.get_transaction_count(address)
+            nonce = w3.eth.get_nonce(address)
             return nonce
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 503:
-                print(Fore.RED + "Layanan RPC tidak tersedia. Mencoba lagi...")
+        except (ValueError, web3.exceptions.TransactionNotFound) as e:
+            print(Fore.RED + f'Error: {e}')
+            if 'Transaction nonce is too distant from current sender nonce' in str(e):
+                print(Fore.RED + 'Nonce terlalu jauh dari yang diharapkan. Mencoba lagi...')
                 time.sleep(delay)
             else:
                 raise
     print(Fore.RED + "Gagal mendapatkan nonce setelah beberapa percobaan.")
     exit()
-
-# Fungsi untuk mengirim transaksi dengan mekanisme penggantian gas yang lebih tinggi jika diperlukan
-def send_transaction_with_replacement(sender_private_key, to_address, amount, gas_price, gas_limit):
-    sender_address = Account.from_key(sender_private_key).address
-
-    # Ambil nonce dengan penanganan kesalahan
-    nonce = get_nonce_with_retry(sender_address)
-
-    while True:
-        try:
-            # Kirim transaksi
-            tx_hash = send_tokens(sender_private_key, to_address, amount, nonce, gas_price, gas_limit)
-            print(Fore.GREEN + f'Transaksi berhasil dikirim ke {to_address} dengan hash: {tx_hash.hex()}')
-            return tx_hash
-        except ValueError as e:
-            print(Fore.RED + f'Error: {e}')
-            if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
-                nonce = get_nonce_with_retry(sender_address)
-            elif 'Replacement transaction underpriced' in str(e):
-                # Jika transaksi underpriced, naikkan gas price sebesar 10% dari harga sebelumnya
-                gas_price = int(gas_price * 1.1)
-                print(Fore.YELLOW + f'Menaikkan gas price menjadi {gas_price}')
-            else:
-                break
-        except Exception as e:
-            print(Fore.RED + f'Transaksi gagal: {e}')
-            break
-
-    return None
 
 # Main program
 def main():
@@ -113,7 +84,7 @@ def main():
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
     input_address = input(Fore.YELLOW + "Masukkan alamat tujuan: ").strip()
-    gas_price_wei = 500  # 0.0000005 UNIT0 dalam wei
+    gas_price_wei = 100  # 0.0000001 UNIT0 dalam wei
     gas_limit = 21000
 
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim per transaksi: ").replace(',', '.'))
@@ -122,9 +93,15 @@ def main():
     total_transactions = 0
 
     for _ in range(num_transactions):
-        tx_hash = send_transaction_with_replacement(sender_private_key, input_address, amount, gas_price_wei, gas_limit)
-        if tx_hash:
+        nonce = get_nonce_with_retry(sender_address)
+        try:
+            tx_hash = send_tokens(sender_private_key, input_address, amount, nonce, gas_price_wei, gas_limit)
+            print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash.hex()}')
             total_transactions += 1
+        except ValueError as e:
+            print(Fore.RED + f'Error: {e}')
+        except Exception as e:
+            print(Fore.RED + f'Transaksi gagal: {e}')
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
