@@ -84,7 +84,7 @@ def main():
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
     input_address = input(Fore.YELLOW + "Masukkan alamat tujuan: ").strip()
-    gas_price_wei = 40  # 0.00000004 UNIT0 dalam wei
+    gas_price_wei = 5  # Set the gas price to a lower value (0.000000005 UNIT0 in wei)
     gas_limit = 21000
 
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim per transaksi: ").replace(',', '.'))
@@ -105,6 +105,8 @@ def main():
                 print(Fore.RED + f'Error: {e}')
                 if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
                     nonce = get_nonce_with_retry(sender_address)
+                elif 'Replacement transaction underpriced' in str(e):
+                    gas_price_wei = int(gas_price_wei * 1.1)  # Increase the gas price by 10%
                 else:
                     break
             except Exception as e:
