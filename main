@@ -84,7 +84,7 @@ def send_transaction_with_replacement(sender_private_key, to_address, amount, ga
             if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
                 nonce = get_nonce_with_retry(sender_address)
             elif 'Replacement transaction underpriced' in str(e):
-                # Jika transaksi underpriced, naikkan gas price sebesar 10%
+                # Jika transaksi underpriced, naikkan gas price sebesar 10% dari harga sebelumnya
                 gas_price = int(gas_price * 1.1)
                 print(Fore.YELLOW + f'Menaikkan gas price menjadi {gas_price}')
             else:
