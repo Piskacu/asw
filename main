@@ -100,8 +100,15 @@ def main():
             total_transactions += 1
         except ValueError as e:
             print(Fore.RED + f'Error: {e}')
+        except web3.exceptions.TransactionNotFound:
+            print(Fore.RED + 'Transaksi tidak ditemukan dalam pool. Mencoba dengan nonce yang berbeda...')
+            nonce += 1  # Increment nonce
+            continue
         except Exception as e:
             print(Fore.RED + f'Transaksi gagal: {e}')
+        
+        # Jika transaksi dikenal, coba dengan nonce yang berbeda
+        nonce += 1
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
