@@ -84,7 +84,7 @@ def main():
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
     input_address = input(Fore.YELLOW + "Masukkan alamat tujuan: ").strip()
-    gas_price_wei = 5  # Set the gas price to a lower value (0.000000005 UNIT0 in wei)
+    gas_price_wei = 60  # 0.00000006 UNIT0 dalam wei
     gas_limit = 21000
 
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim per transaksi: ").replace(',', '.'))
