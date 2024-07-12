@@ -64,11 +64,12 @@ def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
     except exceptions.TransactionError as e:
         print(Fore.RED + "Kesalahan transaksi:", e)
     except Exception as e:
-        if isinstance(e, dict) and 'message' in e and e['message'] == 'Known transaction':
-            print(Fore.YELLOW + "Transaksi sudah diketahui oleh jaringan, kemungkinan nonce yang sama digunakan.")
-        elif isinstance(e, dict) and 'message' in e and e['message'] == 'Replacement transaction underpriced':
+        error_message = str(e)
+        if 'Replacement transaction underpriced' in error_message:
             print(Fore.YELLOW + "Transaksi pengganti terlalu murah, meningkatkan gas price dan mencoba lagi.")
             return send_tokens(sender_private_key, to_address, amount, gas_price * 1.1, gas_limit)
+        elif 'Known transaction' in error_message:
+            print(Fore.YELLOW + "Transaksi sudah diketahui oleh jaringan, kemungkinan nonce yang sama digunakan.")
         else:
             print(Fore.RED + "Terjadi kesalahan:", e)
     return None
