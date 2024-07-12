@@ -1,7 +1,6 @@
 from web3 import Web3
 from eth_account import Account
 import json
-import time
 from colorama import init, Fore, Style
 
 # Inisialisasi colorama
@@ -72,7 +71,6 @@ def main():
     gas_price_gwei = 0.2
     gas_price = w3.to_wei(gas_price_gwei, 'gwei')
     gas_limit = 21000
-    delay = float(input(Fore.YELLOW + "Masukkan jeda waktu antar transaksi dalam detik: ").strip())
     transaction_count = int(input(Fore.YELLOW + "Masukkan jumlah transaksi yang ingin dikirim: ").strip())
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim: ").replace(',', '.'))
 
@@ -91,12 +89,14 @@ def main():
                 print(Fore.RED + f'Error: {e}')
                 if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
                     nonce = w3.eth.get_transaction_count(sender_address)
+                elif 'intrinsic gas too low' in str(e) or 'exceeds allowance' in str(e):
+                    gas_price *= 1.1  # Meningkatkan gas price sebesar 10%
+                    print(Fore.YELLOW + f'Meningkatkan gas price menjadi: {w3.from_wei(gas_price, "gwei")} gwei')
                 else:
                     break
             except Exception as e:
                 print(Fore.RED + f'Transaksi gagal: {e}')
                 break
-        time.sleep(delay)
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
