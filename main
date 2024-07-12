@@ -44,7 +44,7 @@ def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
         'to': to_address,
         'value': amount_wei,
         'gas': gas_limit,
-        'gasPrice': gas_price,
+        'gasPrice': int(gas_price),
         'chainId': chain_id,
     }
 
@@ -58,14 +58,12 @@ def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
         print(Fore.RED + "Transaksi tidak ditemukan:", e)
     except exceptions.ValidationError as e:
         print(Fore.RED + "Kesalahan validasi:", e)
-    except exceptions.TransactionNotFound as e:
-        print(Fore.RED + "Transaksi tidak ditemukan:", e)
     except exceptions.TransactionError as e:
         print(Fore.RED + "Kesalahan transaksi:", e)
     except Exception as e:
-        if e.args[0].get('message') == 'Known transaction':
+        if 'message' in e.args[0] and e.args[0]['message'] == 'Known transaction':
             print(Fore.YELLOW + "Transaksi sudah diketahui oleh jaringan, kemungkinan nonce yang sama digunakan.")
-        elif e.args[0].get('message') == 'Replacement transaction underpriced':
+        elif 'message' in e.args[0] and e.args[0]['message'] == 'Replacement transaction underpriced':
             print(Fore.YELLOW + "Transaksi pengganti terlalu murah, meningkatkan gas price dan mencoba lagi.")
             return send_tokens(sender_private_key, to_address, amount, gas_price * 1.1, gas_limit)
         else:
@@ -94,7 +92,7 @@ def main():
     sender_private_key = read_private_key()
     to_address = '0xYourRecipientAddress'  # Ganti dengan alamat tujuan
     amount = 0.01  # Ganti dengan jumlah yang ingin dikirim
-    gas_price = w3.toWei('20', 'gwei')
+    gas_price = 10**11  # Gas price dalam wei, setara dengan 0.0000001 UNIT0
     gas_limit = 21000
 
     try:
