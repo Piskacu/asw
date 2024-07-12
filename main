@@ -48,8 +48,11 @@ def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
         'chainId': chain_id,
     }
 
+    print(Fore.BLUE + f"Mengirim transaksi dengan detail: {tx}")
+
     signed_tx = w3.eth.account.signTransaction(tx, sender_private_key)
-    
+    print(Fore.BLUE + f"Signed transaction: {signed_tx}")
+
     try:
         tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
         print(Fore.GREEN + f"Transaksi berhasil, tx hash: {tx_hash.hex()}")
@@ -61,9 +64,9 @@ def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
     except exceptions.TransactionError as e:
         print(Fore.RED + "Kesalahan transaksi:", e)
     except Exception as e:
-        if 'message' in e.args[0] and e.args[0]['message'] == 'Known transaction':
+        if isinstance(e, dict) and 'message' in e and e['message'] == 'Known transaction':
             print(Fore.YELLOW + "Transaksi sudah diketahui oleh jaringan, kemungkinan nonce yang sama digunakan.")
-        elif 'message' in e.args[0] and e.args[0]['message'] == 'Replacement transaction underpriced':
+        elif isinstance(e, dict) and 'message' in e and e['message'] == 'Replacement transaction underpriced':
             print(Fore.YELLOW + "Transaksi pengganti terlalu murah, meningkatkan gas price dan mencoba lagi.")
             return send_tokens(sender_private_key, to_address, amount, gas_price * 1.1, gas_limit)
         else:
@@ -92,7 +95,7 @@ def main():
     sender_private_key = read_private_key()
     to_address = '0xYourRecipientAddress'  # Ganti dengan alamat tujuan
     amount = 0.01  # Ganti dengan jumlah yang ingin dikirim
-    gas_price = 2 * 10**11  # Gas price dalam wei, setara dengan 0.0000002 UNIT0
+    gas_price = 2 * 10**11  # Gas price dalam wei, setara dengan 0,0000002 UNIT0
     gas_limit = 21000
 
     try:
