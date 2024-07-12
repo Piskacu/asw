@@ -27,7 +27,7 @@ def read_private_key(filename='private_key.txt'):
         exit()
 
 # Fungsi untuk mengirim token
-def send_tokens(sender_private_key, to_address, amount, nonce, gas_price, gas_limit):
+def send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit):
     sender_address = Account.from_key(sender_private_key).address
     amount_wei = w3.toWei(amount, 'ether')
 
@@ -36,6 +36,8 @@ def send_tokens(sender_private_key, to_address, amount, nonce, gas_price, gas_li
     total_cost = amount_wei + (gas_price * gas_limit)
     if balance < total_cost:
         raise ValueError(f'Saldo tidak mencukupi: saldo {balance}, biaya total {total_cost}')
+
+    nonce = get_nonce_with_retry(sender_address)
 
     tx = {
         'nonce': nonce,
@@ -64,4 +66,24 @@ def get_nonce_with_retry(address, retries=5, delay=5):
             time.sleep(delay)
         except exceptions.BadFunctionCallOutput as e:
             print(Fore.RED + "Keluaran panggilan fungsi buruk:", e)
-            untuk jika
+            time.sleep(delay)
+    raise ValueError("Gagal mendapatkan nonce setelah beberapa kali percobaan")
+
+# Fungsi utama
+def main():
+    sender_private_key = read_private_key()
+    to_address = '0xYourRecipientAddress'  # Ganti dengan alamat tujuan
+    amount = 0.01  # Ganti dengan jumlah yang ingin dikirim
+    gas_price = w3.toWei('20', 'gwei')
+    gas_limit = 21000
+
+    try:
+        tx_hash = send_tokens(sender_private_key, to_address, amount, gas_price, gas_limit)
+        print(Fore.GREEN + f"Transaksi berhasil, tx hash: {tx_hash.hex()}")
+    except ValueError as e:
+        print(Fore.RED + str(e))
+    except Exception as e:
+        print(Fore.RED + "Terjadi kesalahan:", str(e))
+
+if __name__ == "__main__":
+    main()
