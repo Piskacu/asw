@@ -96,7 +96,7 @@ def main():
 
     # Menampilkan saldo pengirim dalam UNIT0
     balance_wei = w3.eth.get_balance(sender_address)
-    balance_unit0 = w3.fromWei(balance_wei, 'ether')
+    balance_unit0 = w3.from_wei(balance_wei, 'ether')  # Perbaikan disini
     print(Fore.CYAN + f"Alamat: {sender_address}")
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
