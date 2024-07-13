@@ -86,20 +86,23 @@ def main():
     gas_limit = 21000
     amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim: ").replace(',', '.'))
 
-    while True:
+    total_transactions = 0
+    while total_transactions < 10000:
         try:
             success, tx_hash = send_tokens_with_retry(sender_private_key, input_address, amount, gas_price_gwei, gas_limit)
             if success:
                 print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash.hex()}')
-            else:
-                print(Fore.RED + 'Gagal mengirim transaksi.')
-            break
+                total_transactions += 1
         except KeyboardInterrupt:
             print(Fore.RED + '\nPengiriman dibatalkan.')
             break
+        except Exception as e:
+            print(Fore.RED + f'Terjadi kesalahan: {e}')
+            time.sleep(5)  # Menunggu 5 detik sebelum mencoba kembali
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
+    print(Fore.CYAN + f"Total transaksi berhasil: {total_transactions}")
     print(Fore.CYAN + "Terima kasih telah menggunakan script ini.")
     print(Fore.CYAN + "Channel : t.me/UGDAirdrop")
     print(Fore.MAGENTA + "===============================")
