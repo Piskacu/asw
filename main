@@ -11,7 +11,7 @@ chain_id = 88817
 w3 = Web3(Web3.HTTPProvider(rpc_url))
 
 # Pastikan koneksi berhasil
-if not w3.isConnected():
+if not w3.is_connected():
     print(Fore.RED + "Koneksi ke RPC gagal")
     exit()
 
@@ -100,4 +100,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
