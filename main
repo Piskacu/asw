@@ -59,8 +59,8 @@ def read_addresses_from_file(filename='addresses.json'):
 # Fungsi untuk mengirim token
 def send_tokens(sender_private_key, to_address, amount, gas_price_gwei, gas_limit):
     sender_address = Account.from_key(sender_private_key).address
-    amount_wei = w3.toWei(amount, 'ether')
-    gas_price = w3.toWei(gas_price_gwei, 'gwei')
+    amount_wei = w3.to_wei(amount, 'ether')
+    gas_price = w3.to_wei(gas_price_gwei, 'gwei')
 
     # Periksa saldo akun pengirim
     balance = w3.eth.get_balance(sender_address)
@@ -96,13 +96,13 @@ def main():
 
     # Menampilkan saldo pengirim dalam UNIT0
     balance_wei = w3.eth.get_balance(sender_address)
-    balance_unit0 = w3.from_wei(balance_wei, 'ether')  # Perbaikan disini
+    balance_unit0 = w3.from_wei(balance_wei, 'ether')
     print(Fore.CYAN + f"Alamat: {sender_address}")
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
     input_address = input(Fore.YELLOW + "Masukkan alamat tujuan (atau tekan Enter untuk membuat alamat baru): ").strip()
     gas_price_gwei = 0.2
-    gas_price = w3.toWei(gas_price_gwei, 'gwei')
+    gas_price = w3.to_wei(gas_price_gwei, 'gwei')
     gas_limit = 21000
     delay = float(input(Fore.YELLOW + "Masukkan jeda waktu antar transaksi dalam detik: ").strip())
 
