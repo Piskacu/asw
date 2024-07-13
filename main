@@ -37,7 +37,7 @@ def create_new_addresses(count):
 # Fungsi untuk menyimpan alamat ke dalam file
 def save_addresses_to_file(addresses, filename='addresses.json'):
     try:
-        with open(filename, 'r') as file):
+        with open(filename, 'r') as file:
             existing_addresses = json.load(file)
     except FileNotFoundError:
         existing_addresses = []
