@@ -37,7 +37,7 @@ def create_new_addresses(count):
 # Fungsi untuk menyimpan alamat ke dalam file
 def save_addresses_to_file(addresses, filename='addresses.json'):
     try:
-        with open(filename, 'r') as file:
+        with open(filename, 'r') as file):
             existing_addresses = json.load(file)
     except FileNotFoundError:
         existing_addresses = []
@@ -139,10 +139,10 @@ def main():
         for _ in range(num_transactions):
             while True:
                 try:
+                    nonce = w3.eth.get_transaction_count(sender_address)  # Memperbarui nonce setiap kali sebelum transaksi
                     tx_hash = send_tokens(sender_private_key, input_address, amount, nonce, gas_price, gas_limit)
                     print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash.hex()}')
                     total_transactions += 1
-                    nonce += 1
                     break
                 except ValueError as e:
                     print(Fore.RED + f'Error: {e}')
