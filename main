@@ -1,5 +1,7 @@
 from web3 import Web3
 from eth_account import Account
+import json
+import time
 from colorama import init, Fore
 
 # Inisialisasi colorama
@@ -25,6 +27,35 @@ def read_private_key(filename='private_key.txt'):
         print(Fore.RED + f"File {filename} tidak ditemukan.")
         exit()
 
+# Fungsi untuk membuat alamat baru
+def create_new_addresses(count):
+    addresses = []
+    for _ in range(count):
+        account = Account.create()
+        addresses.append((account.address, account.key.hex()))
+    return addresses
+
+# Fungsi untuk menyimpan alamat ke dalam file
+def save_addresses_to_file(addresses, filename='addresses.json'):
+    try:
+        with open(filename, 'r') as file:
+            existing_addresses = json.load(file)
+    except FileNotFoundError:
+        existing_addresses = []
+
+    with open(filename, 'w') as file:
+        existing_addresses.extend(addresses)
+        json.dump(existing_addresses, file, indent=4)
+
+# Fungsi untuk membaca alamat dari file
+def read_addresses_from_file(filename='addresses.json'):
+    try:
+        with open(filename, 'r') as file:
+            addresses = json.load(file)
+    except FileNotFoundError:
+        addresses = []
+    return addresses
+
 # Fungsi untuk mengirim token
 def send_tokens(sender_private_key, to_address, amount, gas_price_gwei, gas_limit):
     sender_address = Account.from_key(sender_private_key).address
@@ -32,16 +63,12 @@ def send_tokens(sender_private_key, to_address, amount, gas_price_gwei, gas_limi
     gas_price = w3.toWei(gas_price_gwei, 'gwei')
 
     # Periksa saldo akun pengirim
-    balance = w3.eth.getBalance(sender_address)
+    balance = w3.eth.get_balance(sender_address)
     total_cost = amount_wei + (gas_price * gas_limit)
     if balance < total_cost:
         raise ValueError(f'Saldo tidak mencukupi: saldo {balance}, biaya total {total_cost}')
 
-    # Ambil nonce yang belum digunakan
-    nonce = w3.eth.getTransactionCount(sender_address, 'pending')
-
     tx = {
-        'nonce': nonce,
         'to': to_address,
         'value': amount_wei,
         'gas': gas_limit,
@@ -49,9 +76,11 @@ def send_tokens(sender_private_key, to_address, amount, gas_price_gwei, gas_limi
         'chainId': chain_id,
     }
 
-    # Sign transaksi dan kirim
-    signed_tx = w3.eth.account.signTransaction(tx, sender_private_key)
-    tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+    # Ambil nonce yang belum digunakan
+    nonce = w3.eth.get_transaction_count(sender_address, 'pending')
+
+    signed_tx = w3.eth.account.sign_transaction(tx, sender_private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
     return tx_hash.hex()
 
 # Main program
@@ -66,30 +95,67 @@ def main():
     sender_address = Account.from_key(sender_private_key).address
 
     # Menampilkan saldo pengirim dalam UNIT0
-    balance_wei = w3.eth.getBalance(sender_address)
+    balance_wei = w3.eth.get_balance(sender_address)
     balance_unit0 = w3.fromWei(balance_wei, 'ether')
     print(Fore.CYAN + f"Alamat: {sender_address}")
     print(Fore.CYAN + f"Saldo: {balance_unit0} UNIT0\n")
 
-    input_address = input(Fore.YELLOW + "Masukkan alamat tujuan: ").strip()
-    gas_price_gwei = float(input(Fore.YELLOW + "Masukkan gas price (gwei): ").strip())
-    gas_limit = int(input(Fore.YELLOW + "Masukkan gas limit: ").strip())
-    transaction_count = int(input(Fore.YELLOW + "Masukkan jumlah transaksi yang ingin dikirim: ").strip())
-    amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim: ").replace(',', '.'))
+    input_address = input(Fore.YELLOW + "Masukkan alamat tujuan (atau tekan Enter untuk membuat alamat baru): ").strip()
+    gas_price_gwei = 0.2
+    gas_price = w3.toWei(gas_price_gwei, 'gwei')
+    gas_limit = 21000
+    delay = float(input(Fore.YELLOW + "Masukkan jeda waktu antar transaksi dalam detik: ").strip())
 
     total_transactions = 0
 
-    for _ in range(transaction_count):
-        try:
-            tx_hash = send_tokens(sender_private_key, input_address, amount, gas_price_gwei, gas_limit)
-            print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash}')
-            total_transactions += 1
-        except ValueError as e:
-            print(Fore.RED + f'Error: {e}')
-            break
-        except Exception as e:
-            print(Fore.RED + f'Transaksi gagal: {e}')
-            break
+    if input_address == '':
+        address_count = 1500
+        addresses = create_new_addresses(address_count)
+        save_addresses_to_file(addresses)
+        for address, private_key in addresses:
+            print(Fore.GREEN + f'Generated Address: {address}, Private Key: {private_key}')
+        # Membaca alamat dari file dan mengirim token secara otomatis
+        addresses = read_addresses_from_file()
+        amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim ke setiap alamat: ").replace(',', '.'))
+        nonce = w3.eth.get_transaction_count(sender_address)
+        for address in addresses:
+            while True:
+                try:
+                    tx_hash = send_tokens(sender_private_key, address[0], amount, gas_price_gwei, gas_limit)
+                    print(Fore.GREEN + f'Transaksi berhasil dikirim ke {address[0]} dengan hash: {tx_hash}')
+                    total_transactions += 1
+                    nonce += 1
+                    break
+                except ValueError as e:
+                    print(Fore.RED + f'Error sending to {address[0]}: {e}')
+                    if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
+                        nonce = w3.eth.get_transaction_count(sender_address)
+                    else:
+                        break
+                except Exception as e:
+                    print(Fore.RED + f'Transaksi gagal untuk {address[0]}: {e}')
+                    break
+            time.sleep(delay)
+    else:
+        addresses = [(input_address, None)]
+        save_addresses_to_file(addresses)
+        amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim: ").replace(',', '.'))
+        nonce = w3.eth.get_transaction_count(sender_address)
+        while True:
+            try:
+                tx_hash = send_tokens(sender_private_key, input_address, amount, gas_price_gwei, gas_limit)
+                print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash}')
+                total_transactions += 1
+                break
+            except ValueError as e:
+                print(Fore.RED + f'Error: {e}')
+                if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
+                    nonce = w3.eth.get_transaction_count(sender_address)
+                else:
+                    break
+            except Exception as e:
+                print(Fore.RED + f'Transaksi gagal: {e}')
+                break
 
     print(Fore.MAGENTA + "\n===============================")
     print(Fore.YELLOW + "Pengiriman selesai!")
