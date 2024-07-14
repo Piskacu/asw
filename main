@@ -1,7 +1,7 @@
 from web3 import Web3
 from eth_account import Account
 import json
-from colorama import init, Fore
+from colorama import init, Fore, Style
 
 # Inisialisasi colorama
 init(autoreset=True)
@@ -112,37 +112,39 @@ def main():
         # Membaca alamat dari file dan mengirim token secara otomatis
         addresses = read_addresses_from_file()
         amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim ke setiap alamat: ").replace(',', '.'))
+        transactions_per_address = int(input(Fore.YELLOW + "Masukkan jumlah transaksi per alamat: ").strip())
         nonce = w3.eth.get_transaction_count(sender_address)
         for address in addresses:
-            while True:
-                try:
-                    tx_hash = send_tokens(sender_private_key, address[0], amount, nonce, gas_price, gas_limit)
-                    print(Fore.GREEN + f'Transaksi berhasil dikirim ke {address[0]} dengan hash: {tx_hash.hex()}')
-                    total_transactions += 1
-                    nonce += 1
-                    break
-                except ValueError as e:
-                    print(Fore.RED + f'Error sending to {address[0]}: {e}')
-                    if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
-                        nonce = w3.eth.get_transaction_count(sender_address)
-                    else:
+            for _ in range(transactions_per_address):
+                while True:
+                    try:
+                        tx_hash = send_tokens(sender_private_key, address[0], amount, nonce, gas_price, gas_limit)
+                        print(Fore.GREEN + f'Transaksi berhasil dikirim ke {address[0]} dengan hash: {tx_hash.hex()}')
+                        total_transactions += 1
+                        nonce += 1
                         break
-                except Exception as e:
-                    print(Fore.RED + f'Transaksi gagal untuk {address[0]}: {e}')
-                    break
+                    except ValueError as e:
+                        print(Fore.RED + f'Error sending to {address[0]}: {e}')
+                        if 'Nonce too low' in str(e) or 'Known transaction' in str(e):
+                            nonce = w3.eth.get_transaction_count(sender_address)
+                        else:
+                            break
+                    except Exception as e:
+                        print(Fore.RED + f'Transaksi gagal untuk {address[0]}: {e}')
+                        break
     else:
         addresses = [(input_address, None)]
         save_addresses_to_file(addresses)
         amount = float(input(Fore.YELLOW + "Masukkan jumlah token yang akan dikirim: ").replace(',', '.'))
+        transactions_per_address = int(input(Fore.YELLOW + "Masukkan jumlah transaksi per alamat: ").strip())
         nonce = w3.eth.get_transaction_count(sender_address)
-        num_transactions = int(input(Fore.YELLOW + "Masukkan jumlah transaksi yang ingin dikirim ke alamat tujuan: ").strip())
-        for _ in range(num_transactions):
+        for _ in range(transactions_per_address):
             while True:
                 try:
-                    nonce = w3.eth.get_transaction_count(sender_address)  # Memperbarui nonce setiap kali sebelum transaksi
                     tx_hash = send_tokens(sender_private_key, input_address, amount, nonce, gas_price, gas_limit)
                     print(Fore.GREEN + f'Transaksi berhasil dikirim ke {input_address} dengan hash: {tx_hash.hex()}')
                     total_transactions += 1
+                    nonce += 1
                     break
                 except ValueError as e:
                     print(Fore.RED + f'Error: {e}')
